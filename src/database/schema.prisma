@@ -8,9 +8,219 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Tweets {
-  id        Int      @id @default(autoincrement())
-  content   String
-  published Boolean? @default(false)
+model Beneficiary {
+  id                  String              @id @default(uuid())
+  name                String              @db.VarChar(255)
+  logo                String              @db.VarChar(255)
+  description         String              @db.Text
+  biography           String?             @db.Text
+  numberDonations     Int                 @default(0)
+  totalAmountReceived Decimal             @default(0) @db.Money
+  addressId           String              @map("addressId")
+  address             Address             @relation(fields: [addressId], references: [id], onUpdate: Cascade)
+  active              Boolean?            @default(true)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt()
+  BeneficiaryPhones   BeneficiaryPhones[]
+  BeneficiaryEmails   BeneficiaryEmails[]
+  Donation            Donation[]
+  Need                Need[]
+  Album               Album[]
+  linkSocialNetwork   linkSocialNetwork[]
+
+  @@map("beneficiaries")
+}
+
+model BeneficiaryPhones {
+  id            String      @id @default(uuid())
+  number        String      @db.VarChar(255)
+  beneficiaryId String      @map("beneficiaryId")
+  beneficiary   Beneficiary @relation(fields: [beneficiaryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  active        Boolean?    @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt()
+
+  @@map("beneficiary_phones")
+}
+
+model BeneficiaryEmails {
+  id            String      @id @default(uuid())
+  email         String      @db.VarChar(255)
+  beneficiaryId String      @map("beneficiaryId")
+  beneficiary   Beneficiary @relation(fields: [beneficiaryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  active        Boolean?    @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt()
+
+  @@map("beneficiary_emails")
+}
+
+model Address {
+  id             String        @id @default(uuid())
+  referencePoint String?       @db.VarChar(255)
+  street         String?       @db.VarChar(255)
+  provinceId     Int
+  province       Province      @relation(fields: [provinceId], references: [id], onUpdate: Cascade)
+  countyId       Int
+  county         County        @relation(fields: [countyId], references: [id], onUpdate: Cascade)
+  neighborhoodId Int
+  neighborhood   Neighborhood  @relation(fields: [neighborhoodId], references: [id], onUpdate: Cascade)
+  active         Boolean?      @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt()
+  Donation       Donation?     @relation(fields: [donationId], references: [id])
+  donationId     String?
+  Beneficiary    Beneficiary[]
+  Benefactor     Benefactor[]
+
+  @@map("addresses")
+}
+
+model Province {
+  id        Int       @id @default(autoincrement())
+  name      String    @db.VarChar(255)
+  active    Boolean?  @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt()
+  County    County[]
+  Address   Address[]
+
+  @@map("provinces")
+}
+
+model County {
+  id           Int            @id @default(autoincrement())
+  name         String         @db.VarChar(255)
+  provinceId   Int
+  province     Province       @relation(fields: [provinceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  active       Boolean?       @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt()
+  Neighborhood Neighborhood[]
+  Address      Address[]
+
+  @@map("counties")
+}
+
+model Neighborhood {
+  id        Int       @id @default(autoincrement())
+  name      String    @db.VarChar(255)
+  countyId  Int
+  county    County    @relation(fields: [countyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  active    Boolean?  @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt()
+  Address   Address[]
+
+  @@map("neighborhoods")
+}
+
+model Benefactor {
+  id              String     @id @default(uuid())
+  name            String     @db.VarChar(255)
+  picture         String     @db.VarChar(255)
+  numberDonations Int        @default(0)
+  totalDonated    Decimal    @default(0) @db.Money
+  addressId       String     @map("addressId")
+  address         Address    @relation(fields: [addressId], references: [id], onUpdate: Cascade)
+  active          Boolean?   @default(true)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt()
+  Donation        Donation[]
+
+  @@map("benefactors")
+}
+
+model Donation {
+  id               String      @id @default(uuid())
+  paymentReference String      @db.VarChar(255)
+  value            Decimal     @db.Money
+  status           String      @db.VarChar(255)
+  beneficiaryId    String      @map("beneficiaryId")
+  beneficiary      Beneficiary @relation(fields: [beneficiaryId], references: [id], onUpdate: Cascade)
+  benefactorId     String      @map("benefactorId")
+  benefactor       Benefactor  @relation(fields: [benefactorId], references: [id], onUpdate: Cascade)
+  active           Boolean?    @default(true)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt()
+  Address          Address[]
+
+  @@map("Donations")
+}
+
+model Need {
+  id            String      @id @default(uuid())
+  title         String      @db.VarChar(255)
+  description   String      @db.VarChar(255)
+  quantity      Float
+  estimatedCost Decimal     @db.Money
+  status        String      @db.VarChar(255)
+  beneficiaryId String      @map("beneficiaryId")
+  beneficiary   Beneficiary @relation(fields: [beneficiaryId], references: [id], onUpdate: Cascade)
+  active        Boolean?    @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt()
+
+  @@map("Needs")
+}
+
+model Album {
+  id            String        @id @default(uuid())
+  title         String        @db.VarChar(255)
+  description   String?       @db.VarChar(255)
+  activityDate  DateTime?     @db.Date
+  beneficiaryId String        @map("beneficiaryId")
+  beneficiary   Beneficiary   @relation(fields: [beneficiaryId], references: [id], onUpdate: Cascade)
+  active        Boolean?      @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt()
+  AlbumMedias   AlbumMedias[]
+
+  @@map("Albums")
+}
+
+model Media {
+  id          String        @id @default(uuid())
+  type        String        @db.VarChar(255)
+  path        String        @db.VarChar(255)
+  active      Boolean?      @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt()
+  AlbumMedias AlbumMedias[]
+
+  @@map("medias")
+}
+
+model AlbumMedias {
+  albumId   String
+  album     Album    @relation(fields: [albumId], references: [id], onUpdate: Cascade)
+  mediaId   String
+  media     Media    @relation(fields: [mediaId], references: [id], onUpdate: Cascade)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt()
+
+  @@id([albumId, mediaId])
+  @@map("album_medias")
+}
+
+model socialNetwork {
+  id                String              @id @default(uuid())
+  name              String              @db.VarChar(255)
+  active            Boolean?            @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt()
+  linkSocialNetwork linkSocialNetwork[]
+
+  @@map("social_networks")
+}
+
+model linkSocialNetwork {
+  id              String        @id @default(uuid())
+  link            String        @db.VarChar(255)
+  beneficiaryId   String        @map("beneficiaryId")
+  beneficiary     Beneficiary   @relation(fields: [beneficiaryId], references: [id], onUpdate: Cascade)
+  socialNetworkId String        @map("socialNetworkId")
+  socialNetwork   socialNetwork @relation(fields: [socialNetworkId], references: [id], onUpdate: Cascade)
+
+  @@map("links_social_networks")
 }
