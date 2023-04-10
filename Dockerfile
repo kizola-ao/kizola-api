@@ -56,7 +56,7 @@ RUN npm ci --only=production && npm cache clean --force
 USER node
 
 ###################
-# PRODUCTION
+# PRODUCTION IMAGE
 ###################
 
 FROM node:18-alpine As production
