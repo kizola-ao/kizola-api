@@ -9,26 +9,50 @@ datasource db {
 }
 
 model Beneficiary {
-  id                  String              @id @default(uuid())
-  name                String              @db.VarChar(255)
-  logo                String              @db.VarChar(255)
-  description         String              @db.Text
-  biography           String?             @db.Text
-  numberDonations     Int                 @default(0)
-  totalAmountReceived Decimal             @default(0) @db.Money
-  addressId           String              @map("addressId")
-  address             Address             @relation(fields: [addressId], references: [id], onUpdate: Cascade)
-  active              Boolean?            @default(true)
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt()
-  BeneficiaryPhones   BeneficiaryPhones[]
-  BeneficiaryEmails   BeneficiaryEmails[]
-  Donation            Donation[]
-  Need                Need[]
-  Album               Album[]
-  linkSocialNetwork   linkSocialNetwork[]
+  id                      String                    @id @default(uuid())
+  name                    String                    @db.VarChar(255)
+  logo                    String                    @db.VarChar(255)
+  description             String                    @db.Text
+  biography               String?                   @db.Text
+  numberDonations         Int                       @default(0)
+  totalAmountReceived     Decimal                   @default(0) @db.Money
+  addressId               String                    @map("addressId")
+  address                 Address                   @relation(fields: [addressId], references: [id], onUpdate: Cascade)
+  active                  Boolean?                  @default(true)
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt()
+  BeneficiaryPhones       BeneficiaryPhones[]
+  BeneficiaryEmails       BeneficiaryEmails[]
+  Donation                Donation[]
+  Need                    Need[]
+  Album                   Album[]
+  linkSocialNetwork       linkSocialNetwork[]
+  BeneficiarySocialCauses BeneficiarySocialCauses[]
 
   @@map("beneficiaries")
+}
+
+model SocialCause {
+  id                      String                    @id @default(uuid())
+  name                    String                    @db.VarChar(255)
+  active                  Boolean?                  @default(true)
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt()
+  BeneficiarySocialCauses BeneficiarySocialCauses[]
+
+  @@map("social_causes")
+}
+
+model BeneficiarySocialCauses {
+  id            String      @id @default(uuid())
+  beneficiaryId String      @map("beneficiaryId")
+  beneficiary   Beneficiary @relation(fields: [beneficiaryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  socialCauseId String      @map("socialCauseId")
+  socialCause   SocialCause @relation(fields: [socialCauseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt()
+
+  @@map("beneficiary_social_causes")
 }
 
 model BeneficiaryPhones {
@@ -68,8 +92,6 @@ model Address {
   active         Boolean?      @default(true)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt()
-  Donation       Donation?     @relation(fields: [donationId], references: [id])
-  donationId     String?
   Beneficiary    Beneficiary[]
   Benefactor     Benefactor[]
 
@@ -143,7 +165,6 @@ model Donation {
   active           Boolean?    @default(true)
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt()
-  Address          Address[]
 
   @@map("Donations")
 }
