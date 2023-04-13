@@ -11,15 +11,16 @@ services:
     env_file:
       - .env
     # Run a command against the development stage of the image
-    command: npm run start:dev
-    ports:
-      - 3000:3000
+    # command: npm run start:dev
+    # ports:
+    #   - 3000:3000
     depends_on:
       - postgres
 
   postgres:
     image: postgres
     restart: always
+    network_mode: "host"
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
