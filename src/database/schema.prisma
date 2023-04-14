@@ -16,8 +16,8 @@ model Beneficiary {
   biography               String?                   @db.Text
   numberDonations         Int                       @default(0)
   totalAmountReceived     Decimal                   @default(0) @db.Money
-  addressId               String                    @map("addressId")
-  address                 Address                   @relation(fields: [addressId], references: [id], onUpdate: Cascade)
+  addressId               String?                    @map("addressId")
+  address                 Address?                   @relation(fields: [addressId], references: [id], onUpdate: Cascade)
   active                  Boolean?                  @default(true)
   createdAt               DateTime                  @default(now())
   updatedAt               DateTime                  @updatedAt()
@@ -44,7 +44,6 @@ model SocialCause {
 }
 
 model BeneficiarySocialCauses {
-  id            String      @id @default(uuid())
   beneficiaryId String      @map("beneficiaryId")
   beneficiary   Beneficiary @relation(fields: [beneficiaryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   socialCauseId String      @map("socialCauseId")
@@ -52,6 +51,7 @@ model BeneficiarySocialCauses {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt()
 
+  @@id([beneficiaryId, socialCauseId])
   @@map("beneficiary_social_causes")
 }
 
