@@ -87,8 +87,8 @@ model Address {
   province       Province      @relation(fields: [provinceId], references: [id], onUpdate: Cascade)
   countyId       Int
   county         County        @relation(fields: [countyId], references: [id], onUpdate: Cascade)
-  neighborhoodId Int
-  neighborhood   Neighborhood  @relation(fields: [neighborhoodId], references: [id], onUpdate: Cascade)
+  neighborhoodId Int?
+  neighborhood   Neighborhood?  @relation(fields: [neighborhoodId], references: [id], onUpdate: Cascade)
   active         Boolean?      @default(true)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt()

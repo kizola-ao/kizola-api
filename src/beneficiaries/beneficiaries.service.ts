@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Beneficiary, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/database/prisma.service';
 import { CreateBeneficiaryDto } from './dto/create-beneficiary.dto';
@@ -11,40 +11,81 @@ export class BeneficiariesService {
     constructor(private prisma: PrismaService) { }
 
     async createBeneficiary(data: CreateBeneficiaryDto): Promise<Beneficiary> {
-        return this.prisma.beneficiary.create({
-            data: {
-                name: data.name,
-                logo: data.logo,
-                description: data.description,
-                biography: data.biography,
-                BeneficiarySocialCauses: {
-                    create: data.socialCausesId.map((socialCauseId) => ({
-                        socialCauseId,
-                    })),
+
+        const mandatoryFields = ['name', 'logo', 'description', 'provinceId', 'countyId', 'street', 'phoneNumbers', 'emails', 'socialCausesId'];
+
+        if (!data.neighborhoodId && !data.neighborhoodName) {
+            throw new BadRequestException('Missing fields: neighborhoodId or neighborhoodName');
+        }
+
+        const keys = Object.keys(data);
+
+        const missingFields = mandatoryFields.filter((field) => !keys.includes(field));
+
+        if (missingFields.length > 0) {
+            throw new BadRequestException(`Missing fields: ${missingFields.join(', ')}`);
+        }
+
+        return await this.prisma.$transaction(async (prisma) => {
+            const beneficiary = await this.prisma.beneficiary.create({
+                data: {
+                    name: data.name,
+                    logo: data.logo,
+                    description: data.description,
+                    biography: data.biography,
+                    BeneficiarySocialCauses: {
+                        create: data.socialCausesId.map((socialCauseId) => ({
+                            socialCauseId,
+                        })),
+                    },
+                    BeneficiaryPhones: {
+                        create: data.phoneNumbers.map((phoneNumber) => ({
+                            number: phoneNumber,
+                        })),
+                    },
+                    BeneficiaryEmails: {
+                        create: data.emails.map((email) => ({
+                            email,
+                        })),
+                    },
+                    address: {
+                        create: {
+                            province: {
+                                connect: {
+                                    id: data.provinceId,
+                                },
+                            },
+                            street: data.street,
+                            county: {
+                                connect: {
+                                    id: data.countyId,
+                                },
+                            },
+                            referencePoint: data.referencePoint,
+                        },
+                    },
                 },
-                BeneficiaryPhones: {
-                    create: data.phoneNumbers.map((phoneNumber) => ({
-                        number: phoneNumber,
-                    })),
-                },
-                BeneficiaryEmails: {
-                    create: data.emails.map((email) => ({
-                        email,
-                    })),
-                },
-                address: {
-                    create: {
-                        province: {
+            });
+
+            if (data.neighborhoodId) {
+                await prisma.address.update({
+                    where: {
+                        id: beneficiary.addressId,
+                    },
+                    data: {
+                        neighborhood: {
                             connect: {
-                                id: data.provinceId,
+                                id: data.neighborhoodId,
                             },
                         },
-                        street: data.street,
-                        county: {
-                            connect: {
-                                id: data.countyId,
-                            },
-                        },
+                    },
+                });
+            } else if (data.neighborhoodName) {
+                await prisma.address.update({
+                    where: {
+                        id: beneficiary.addressId,
+                    },
+                    data: {
                         neighborhood: {
                             create: {
                                 name: data.neighborhoodName,
@@ -55,10 +96,11 @@ export class BeneficiariesService {
                                 },
                             },
                         },
-                        referencePoint: data.referencePoint,
                     },
-                },
-            },
+                });
+            }
+    
+            return beneficiary;
         });
     }
 
