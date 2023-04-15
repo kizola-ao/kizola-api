@@ -16,6 +16,10 @@ export class BeneficiariesService {
             throw new BadRequestException('Missing fields: neighborhoodId or neighborhoodName');
         }
 
+        if (data.neighborhoodId && data.neighborhoodName) {
+            throw new BadRequestException('Pass neighborhoodId or neighborhoodName, not both');
+        }
+
         return await this.prisma.$transaction(async (prisma) => {
             const beneficiary = await this.prisma.beneficiary.create({
                 data: {
