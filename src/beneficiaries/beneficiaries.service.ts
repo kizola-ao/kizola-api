@@ -12,18 +12,8 @@ export class BeneficiariesService {
 
     async createBeneficiary(data: CreateBeneficiaryDto): Promise<Beneficiary> {
 
-        const mandatoryFields = ['name', 'logo', 'description', 'provinceId', 'countyId', 'street', 'phoneNumbers', 'emails', 'socialCausesId'];
-
         if (!data.neighborhoodId && !data.neighborhoodName) {
             throw new BadRequestException('Missing fields: neighborhoodId or neighborhoodName');
-        }
-
-        const keys = Object.keys(data);
-
-        const missingFields = mandatoryFields.filter((field) => !keys.includes(field));
-
-        if (missingFields.length > 0) {
-            throw new BadRequestException(`Missing fields: ${missingFields.join(', ')}`);
         }
 
         return await this.prisma.$transaction(async (prisma) => {
