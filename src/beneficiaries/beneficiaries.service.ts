@@ -117,7 +117,12 @@ export class BeneficiariesService {
                 });
             }
 
-            if (data.provinceId && data.countyId && (data.neighborhoodName || data.neighborhoodId) && data.street) {
+            if (data.provinceId && data.countyId && (data.neighborhoodId || data.neighborhoodName) && data.street) {
+
+                if (data.neighborhoodId && data.neighborhoodName) {
+                    throw new BadRequestException('Provide neighborhoodId or neighborhoodName, not both')
+                }
+
                 await prisma.address.update({
                     where: {
                         id: beneficiary.addressId,
@@ -144,11 +149,6 @@ export class BeneficiariesService {
                     },
                 });
 
-                /* 
-                    API RULE: 
-                        - if neighborhoodId is provided, neighborhoodName is ignored
-                        - if neighborhoodId is not provided, neighborhoodName is required to create a new neighborhood
-                */
                 if (data.neighborhoodId) {
                     await prisma.address.update({
                         where: {
@@ -190,6 +190,18 @@ export class BeneficiariesService {
                         street: data.street,
                     },
                 });
+            }else {
+                const mandatoryFields = ['provinceId', 'countyId', 'street'];
+
+                const missingFields = mandatoryFields.filter((field) => !data[field]);
+
+                if (!data.neighborhoodId && !data.neighborhoodName) {
+                    throw new BadRequestException('Provide neighborhoodId or neighborhoodName')
+                }
+
+                if (missingFields.length > 0) {
+                    throw new BadRequestException(`Missing fields: ${missingFields.join(', ')}`);
+                }
             }
 
             if (data.referencePoint) {
