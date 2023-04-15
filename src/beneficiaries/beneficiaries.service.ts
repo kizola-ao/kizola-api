@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Beneficiary, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/database/prisma.service';
-import { CreateBeneficiaryDto } from './dto/create-beneficiary.dto';
+import { CreateBeneficiaryDto } from './dto/create/create-beneficiary.dto';
 import { RequestUpdateBeneficiaryDto } from './dto/update/request-update-beneficiary.dto';
 import { ReadBeneficiaryDto } from './dto/read-beneficiary.dto ';
 import { ResponseUpdateBeneficiaryDto } from './dto/update/response-update-beneficiary.dto';

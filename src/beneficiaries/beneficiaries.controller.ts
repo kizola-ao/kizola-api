@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
 import { BeneficiariesService } from './beneficiaries.service';
-import { CreateBeneficiaryDto } from './dto/create-beneficiary.dto';
+import { CreateBeneficiaryDto } from './dto/create/create-beneficiary.dto';
 import { RequestUpdateBeneficiaryDto } from './dto/update/request-update-beneficiary.dto';
 import { Beneficiary as BeneficiaryModel } from '@prisma/client';
 import { ReadBeneficiaryDto } from './dto/read-beneficiary.dto ';
