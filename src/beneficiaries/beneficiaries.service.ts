@@ -1,10 +1,11 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { Beneficiary, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/database/prisma.service';
 import { CreateBeneficiaryDto } from './dto/create/create-beneficiary.dto';
 import { RequestUpdateBeneficiaryDto } from './dto/update/request-update-beneficiary.dto';
-import { ReadBeneficiaryDto } from './dto/read-beneficiary.dto ';
+import { RequestReadBeneficiaryDto } from './dto/read/request-read-beneficiary.dto ';
 import { ResponseUpdateBeneficiaryDto } from './dto/update/response-update-beneficiary.dto';
+import { ResponseReadBeneficiaryDto } from './dto/read/response-read-beneficiary.dto ';
 
 @Injectable()
 export class BeneficiariesService {
@@ -93,8 +94,162 @@ export class BeneficiariesService {
                     },
                 });
             }
-    
+
             return createBeneficiary;
+        });
+    }
+
+    async readBeneficiaries(params: {
+        skip?: number;
+        take?: number;
+        cursor?: Prisma.BeneficiaryWhereUniqueInput;
+        where?: Prisma.BeneficiaryWhereInput;
+        orderBy?: Prisma.BeneficiaryOrderByWithRelationInput;
+    }): Promise<ResponseReadBeneficiaryDto> {
+        const { skip, take, cursor, where, orderBy } = params;
+
+        return this.prisma.beneficiary.findMany({
+            skip,
+            take,
+            cursor,
+            where,
+            orderBy,
+            select: {
+                id: true,
+                name: true,
+                logo: true,
+                description: true,
+                biography: true,
+                numberDonations: true,
+                totalAmountReceived: true,
+                active: true,
+                createdAt: true,
+                updatedAt: true,
+                BeneficiarySocialCauses: {
+                    select: {
+                        socialCause: {
+                            select: {
+                                name: true,
+                            },
+                        },
+                    },
+                },
+                BeneficiaryPhones: {
+                    select: {
+                        id: true,
+                        number: true,
+                        active: true,
+                        createdAt: true,
+                        updatedAt: true,
+                    },
+                },
+                BeneficiaryEmails: {
+                    select: {
+                        id: true,
+                        email: true,
+                        active: true,
+                        createdAt: true,
+                        updatedAt: true,
+                    },
+                },
+                address: {
+                    select: {
+                        id: true,
+                        street: true,
+                        referencePoint: true,
+                        province: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
+                        county: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
+                        neighborhood: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
+                    },
+                },
+            }
+        });
+    }
+
+    async readBeneficiary(beneficiary: RequestReadBeneficiaryDto): Promise<ResponseReadBeneficiaryDto | null> {
+        return this.prisma.beneficiary.findUnique({
+            where: {
+                id: beneficiary.id,
+            },
+            select: {
+                id: true,
+                name: true,
+                logo: true,
+                description: true,
+                biography: true,
+                numberDonations: true,
+                totalAmountReceived: true,
+                active: true,
+                createdAt: true,
+                updatedAt: true,
+                BeneficiarySocialCauses: {
+                    select: {
+                        socialCause: {
+                            select: {
+                                name: true,
+                            },
+                        },
+                    },
+                },
+                BeneficiaryPhones: {
+                    select: {
+                        id: true,
+                        number: true,
+                        active: true,
+                        createdAt: true,
+                        updatedAt: true,
+                    },
+                },
+                BeneficiaryEmails: {
+                    select: {
+                        id: true,
+                        email: true,
+                        active: true,
+                        createdAt: true,
+                        updatedAt: true,
+                    },
+                },
+                address: {
+                    select: {
+                        id: true,
+                        street: true,
+                        referencePoint: true,
+                        province: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
+                        county: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
+                        neighborhood: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
+                    },
+                },
+            }
         });
     }
 
@@ -117,8 +272,6 @@ export class BeneficiariesService {
                 });
             }
 
-            
-
             if (beneficiary.provinceId && beneficiary.countyId && (beneficiary.neighborhoodId || beneficiary.neighborhoodName) && beneficiary.street) {
 
                 if (beneficiary.neighborhoodId && beneficiary.neighborhoodName) {
@@ -135,19 +288,12 @@ export class BeneficiariesService {
                                 id: beneficiary.provinceId,
                             },
                         },
-                    },
-                });
-
-                await prisma.address.update({
-                    where: {
-                        id: updateBeneficiary.addressId,
-                    },
-                    data: {
                         county: {
                             connect: {
                                 id: beneficiary.countyId,
                             },
                         },
+                        street: beneficiary.street,
                     },
                 });
 
@@ -184,15 +330,7 @@ export class BeneficiariesService {
                     });
                 }
 
-                await prisma.address.update({
-                    where: {
-                        id: updateBeneficiary.addressId,
-                    },
-                    data: {
-                        street: beneficiary.street,
-                    },
-                });
-            }else {
+            } else {
                 const mandatoryFields = ['provinceId', 'countyId', 'street'];
 
                 const missingFields = mandatoryFields.filter((field) => !beneficiary[field]);
@@ -265,95 +403,6 @@ export class BeneficiariesService {
             return beneficiary;
         });
     };
-
-    async beneficiary(beneficiary: ReadBeneficiaryDto): Promise<ReadBeneficiaryDto | null> {
-        return this.prisma.beneficiary.findUnique({
-            where: {
-                id: beneficiary.id,
-            },
-            select: {
-                id: true,
-                name: true,
-                logo: true,
-                description: true,
-                biography: true,
-                numberDonations: true,
-                totalAmountReceived: true,
-                active: true,
-                createdAt: true,
-                updatedAt: true,
-                BeneficiarySocialCauses: {
-                    select: {
-                        socialCause: {
-                            select: {
-                                name: true,
-                            },
-                        },
-                    },
-                },
-                BeneficiaryPhones: {
-                    select: {
-                        id: true,
-                        number: true,
-                        active: true,
-                        createdAt: true,
-                        updatedAt: true,
-                    },
-                },
-                BeneficiaryEmails: {
-                    select: {
-                        id: true,
-                        email: true,
-                        active: true,
-                        createdAt: true,
-                        updatedAt: true,
-                    },
-                },
-                address: {
-                    select: {
-                        id: true,
-                        street: true,
-                        referencePoint: true,
-                        province: {
-                            select: {
-                                id: true,
-                                name: true,
-                            },
-                        },
-                        county: {
-                            select: {
-                                id: true,
-                                name: true,
-                            },
-                        },
-                        neighborhood: {
-                            select: {
-                                id: true,
-                                name: true,
-                            },
-                        },
-                    },
-                },
-            }
-        });
-    }
-
-    async beneficiaries(params: {
-        skip?: number;
-        take?: number;
-        cursor?: Prisma.BeneficiaryWhereUniqueInput;
-        where?: Prisma.BeneficiaryWhereInput;
-        orderBy?: Prisma.BeneficiaryOrderByWithRelationInput;
-    }): Promise<Beneficiary[]> {
-        const { skip, take, cursor, where, orderBy } = params;
-        return this.prisma.beneficiary.findMany({
-            skip,
-            take,
-            cursor,
-            where,
-            orderBy,
-        });
-    }
 
     async deleteBeneficiary(where: Prisma.BeneficiaryWhereUniqueInput): Promise<Beneficiary> {
         return this.prisma.beneficiary.delete({

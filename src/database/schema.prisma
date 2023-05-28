@@ -16,8 +16,8 @@ model Beneficiary {
   biography               String?                   @db.Text
   numberDonations         Int                       @default(0)
   totalAmountReceived     Decimal                   @default(0) @db.Money
-  addressId               String?                    @map("addressId")
-  address                 Address?                   @relation(fields: [addressId], references: [id], onUpdate: Cascade)
+  addressId               String?                   @map("addressId")
+  address                 Address?                  @relation(fields: [addressId], references: [id], onUpdate: Cascade)
   active                  Boolean?                  @default(true)
   createdAt               DateTime                  @default(now())
   updatedAt               DateTime                  @updatedAt()
@@ -88,7 +88,7 @@ model Address {
   countyId       Int
   county         County        @relation(fields: [countyId], references: [id], onUpdate: Cascade)
   neighborhoodId Int?
-  neighborhood   Neighborhood?  @relation(fields: [neighborhoodId], references: [id], onUpdate: Cascade)
+  neighborhood   Neighborhood? @relation(fields: [neighborhoodId], references: [id], onUpdate: Cascade)
   active         Boolean?      @default(true)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt()

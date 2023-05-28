@@ -3,7 +3,7 @@ import { BeneficiariesService } from './beneficiaries.service';
 import { CreateBeneficiaryDto } from './dto/create/create-beneficiary.dto';
 import { RequestUpdateBeneficiaryDto } from './dto/update/request-update-beneficiary.dto';
 import { Beneficiary as BeneficiaryModel } from '@prisma/client';
-import { ReadBeneficiaryDto } from './dto/read-beneficiary.dto ';
+import { ResponseReadBeneficiaryDto } from './dto/read/response-read-beneficiary.dto ';
 import { ResponseUpdateBeneficiaryDto } from './dto/update/response-update-beneficiary.dto';
 
 @Controller('beneficiaries')
@@ -15,27 +15,19 @@ export class BeneficiariesController {
         return this.beneficiaresService.createBeneficiary(data);
     }
 
-    //update beneficiary
-    @Put('/:id')
-    async updateBeneficiary(@Param('id') id: string, @Body() data: RequestUpdateBeneficiaryDto): Promise<ResponseUpdateBeneficiaryDto> {
-        return this.beneficiaresService.updateBeneficiary(id, data);
-    }
-
-    //get all beneficiaries with params filter and pagination 
     @Get()
-    async getAllBeneficiaries(@Param() params): Promise<BeneficiaryModel[]> {
-        return this.beneficiaresService.beneficiaries(params);
+    async readAllBeneficiaries(@Param() params): Promise<ResponseReadBeneficiaryDto> {
+        return this.beneficiaresService.readBeneficiaries(params);
     }
 
     @Get('/:id')
-    async getBeneficiaryById(@Param('id') id: string): Promise<ReadBeneficiaryDto> {
-        return this.beneficiaresService.beneficiary({ id: String(id) });
+    async readBeneficiaryById(@Param('id') id: string): Promise<ResponseReadBeneficiaryDto> {
+        return this.beneficiaresService.readBeneficiary({ id: String(id) });
     }
 
-    //filter by name
     @Get('/search/:q')
-    async getBeneficiaryByName(@Param('q') q: string): Promise<BeneficiaryModel[]> {
-        return this.beneficiaresService.beneficiaries({
+    async ReadBeneficiaryByName(@Param('q') q: string): Promise<ResponseReadBeneficiaryDto> {
+        return this.beneficiaresService.readBeneficiaries({
             where: {
                 name: {
                     contains: q,
@@ -45,5 +37,9 @@ export class BeneficiariesController {
         });
     }
 
+    @Put('/:id')
+    async updateBeneficiary(@Param('id') id: string, @Body() data: RequestUpdateBeneficiaryDto): Promise<ResponseUpdateBeneficiaryDto> {
+        return this.beneficiaresService.updateBeneficiary(id, data);
+    }
 
 }
