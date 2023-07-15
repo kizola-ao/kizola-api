@@ -32,7 +32,7 @@ export class BeneficiariesService {
                         create: beneficiary.socialCausesId.map((socialCauseId) => ({
                             socialCauseId,
                         })),
-                    },
+                    }, 
                     BeneficiaryPhones: {
                         create: beneficiary.phoneNumbers.map((phoneNumber) => ({
                             number: phoneNumber,

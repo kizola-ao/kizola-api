@@ -19,7 +19,7 @@ services:
 
   postgres_kizola:
     image: postgres
-    # restart: always
+    restart: always
     container_name: postgres_kizola
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
