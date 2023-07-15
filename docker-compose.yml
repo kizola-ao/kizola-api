@@ -1,41 +1,40 @@
 services:
-  kizola-api:
+  kizola:
     build:
       dockerfile: Dockerfile
       context: .
-      # Only will build development stage from our dockerfile
       target: development
-    # container_name: kizola-api
+    container_name: kizola
     volumes:
-      - .:/usr/src/app
+      - .:/home/node/kizola
     env_file:
       - .env
-    # Run a command against the development stage of the image
-    # command: npm run start:dev
-    # ports:
-    #   - 3000:3000
+    command: npm run start:dev
+    ports:
+      - 3000:3000
     depends_on:
-      - postgres
+      - postgres_kizola
     networks:
       - kizola-network
 
-  postgres:
+  postgres_kizola:
     image: postgres
-    restart: always
+    # restart: always
+    container_name: postgres_kizola
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres_kizola:5432/${POSTGRES_DB}?schema=public
     ports:
       - '5432:5432'
     volumes:
-      - kizola-docker-nest-postgres:/var/lib/postgresql/data
+      - .:/home/node/postgres/data
     networks:
       - kizola-network
 
-volumes:
-  kizola-docker-nest-postgres:
+# volumes:
+#   kizola:
 
 networks:
   kizola-network:
