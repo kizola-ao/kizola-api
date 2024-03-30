@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import { BeneficiariesService } from './beneficiaries.service';
 import { CreateBeneficiaryDto } from './dto/create/create-beneficiary.dto';
 import { RequestUpdateBeneficiaryDto } from './dto/update/request-update-beneficiary.dto';
@@ -26,7 +26,7 @@ export class BeneficiariesController {
     }
 
     @Get('/search/:q')
-    async ReadBeneficiaryByName(@Param('q') q: string): Promise<ResponseReadBeneficiaryDto> {
+    async ReadBeneficiaryByString(@Query('q') q: string): Promise<ResponseReadBeneficiaryDto> {
         return this.beneficiaresService.readBeneficiaries({
             where: {
                 name: {
@@ -37,9 +37,13 @@ export class BeneficiariesController {
         });
     }
 
-    @Put('/:id')
+    @Patch('/:id')
     async updateBeneficiary(@Param('id') id: string, @Body() data: RequestUpdateBeneficiaryDto): Promise<ResponseUpdateBeneficiaryDto> {
         return this.beneficiaresService.updateBeneficiary(id, data);
     }
 
+    @Patch('/:id/soft-delete')
+    async softDeleteBeneficiary(@Param('id') id: string): Promise<ResponseUpdateBeneficiaryDto> {
+        return this.beneficiaresService.softDeleteBeneficiary(id);
+    }
 }
