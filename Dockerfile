@@ -11,9 +11,13 @@ COPY --chown=node:node .env ./
 COPY --chown=node:node tsconfig.json ./
 COPY --chown=node:node . .
 
+RUN npm i -g @nestjs/cli
+
+RUN npm i prisma -D --save-exact --save-dev
+
 RUN npm ci
 
-RUN npm run prisma:generate
+RUN npx prisma generate --schema=./src/database/schema.prisma
 
 USER node
 
