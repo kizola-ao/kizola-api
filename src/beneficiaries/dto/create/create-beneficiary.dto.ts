@@ -33,9 +33,11 @@ export class CreateBeneficiaryDto {
     @IsEmail({}, { each: true })
     emails: []
 
+    @IsNotEmpty()
     @IsInt()
     provinceId: number
 
+    @IsNotEmpty()
     @IsInt()
     countyId: number
 

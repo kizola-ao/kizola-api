@@ -11,6 +11,8 @@ import { ResponseReadBeneficiaryDto } from './dto/read/response-read-beneficiary
 export class BeneficiariesService {
     constructor(private prisma: PrismaService) { }
 
+    // TO-DO: set DTO properties for request and response
+
     async createBeneficiary(beneficiary: CreateBeneficiaryDto): Promise<Beneficiary> {
 
         if (!beneficiary.neighborhoodId && !beneficiary.neighborhoodName) {
@@ -108,7 +110,7 @@ export class BeneficiariesService {
     }): Promise<ResponseReadBeneficiaryDto> {
         const { skip, take, cursor, where, orderBy } = params;
 
-        return this.prisma.beneficiary.findMany({
+        const beneficiaries = this.prisma.beneficiary.findMany({
             skip,
             take,
             cursor,
@@ -179,10 +181,47 @@ export class BeneficiariesService {
                 },
             }
         });
+
+        // TO-DO: create a method to return the response because the code is repeated in readBeneficiary method
+        return (await beneficiaries).map((beneficiary) => ({
+            id: beneficiary.id,
+            name: beneficiary.name,
+            logo: beneficiary.logo,
+            description: beneficiary.description,
+            biography: beneficiary.biography,
+            numberDonations: beneficiary.numberDonations,
+            totalAmountReceived: beneficiary.totalAmountReceived,
+            active: beneficiary.active,
+            createdAt: beneficiary.createdAt,
+            updatedAt: beneficiary.updatedAt,
+            socialCauses: beneficiary.BeneficiarySocialCauses.map((beneficiarySocialCause) => beneficiarySocialCause.socialCause.name),
+            phones: beneficiary.BeneficiaryPhones.map((beneficiaryPhone) => ({
+                id: beneficiaryPhone.id,
+                number: beneficiaryPhone.number,
+                active: beneficiaryPhone.active,
+                createdAt: beneficiaryPhone.createdAt,
+                updatedAt: beneficiaryPhone.updatedAt,
+            })),
+            emails: beneficiary.BeneficiaryEmails.map((beneficiaryEmail) => ({
+                id: beneficiaryEmail.id,
+                email: beneficiaryEmail.email,
+                active: beneficiaryEmail.active,
+                createdAt: beneficiaryEmail.createdAt,
+                updatedAt: beneficiaryEmail.updatedAt,
+            })),
+            address: {
+                id: beneficiary.address.id,
+                province: beneficiary.address.province.name,
+                county: beneficiary.address.county.name,
+                neighborhood: beneficiary.address.neighborhood.name,
+                street: beneficiary.address.street,
+                referencePoint: beneficiary.address.referencePoint,
+            },
+        }));
     }
 
     async readBeneficiary(beneficiary: RequestReadBeneficiaryDto): Promise<ResponseReadBeneficiaryDto | null> {
-        return this.prisma.beneficiary.findUnique({
+        const beneficiaryFounded = this.prisma.beneficiary.findUnique({
             where: {
                 id: beneficiary.id,
             },
@@ -251,12 +290,57 @@ export class BeneficiariesService {
                 },
             }
         });
+
+        if (await beneficiaryFounded == null) {
+            return `Beneficiary with id ${beneficiary.id} not found`;
+        }
+
+        return await beneficiaryFounded.then((beneficiary) => ({
+            id: beneficiary.id,
+            name: beneficiary.name,
+            logo: beneficiary.logo,
+            description: beneficiary.description,
+            biography: beneficiary.biography,
+            numberDonations: beneficiary.numberDonations,
+            totalAmountReceived: beneficiary.totalAmountReceived,
+            active: beneficiary.active,
+            createdAt: beneficiary.createdAt,
+            updatedAt: beneficiary.updatedAt,
+            socialCauses: beneficiary.BeneficiarySocialCauses.map((beneficiarySocialCause) => beneficiarySocialCause.socialCause.name),
+            phones: beneficiary.BeneficiaryPhones.map((beneficiaryPhone) => ({
+                id: beneficiaryPhone.id,
+                number: beneficiaryPhone.number,
+                active: beneficiaryPhone.active,
+                createdAt: beneficiaryPhone.createdAt,
+                updatedAt: beneficiaryPhone.updatedAt,
+            })),
+            emails: beneficiary.BeneficiaryEmails.map((beneficiaryEmail) => ({
+                id: beneficiaryEmail.id,
+                email: beneficiaryEmail.email,
+                active: beneficiaryEmail.active,
+                createdAt: beneficiaryEmail.createdAt,
+                updatedAt: beneficiaryEmail.updatedAt,
+            })),
+            address: {
+                id: beneficiary.address.id,
+                province: beneficiary.address.province.name,
+                county: beneficiary.address.county.name,
+                neighborhood: beneficiary.address.neighborhood.name,
+                street: beneficiary.address.street,
+                referencePoint: beneficiary.address.referencePoint,
+            },
+        }));
     }
 
+    // TO-DO: method create and update not necessarily return the body, just the status code! Search in phind more about that
     async updateBeneficiary(id: string, beneficiary: RequestUpdateBeneficiaryDto): Promise<ResponseUpdateBeneficiaryDto> {
         return await this.prisma.$transaction(async (prisma) => {
 
             let updateBeneficiary: Beneficiary;
+
+            if (beneficiary.neighborhoodId && beneficiary.neighborhoodName) {
+                throw new BadRequestException('Provide neighborhoodId or neighborhoodName, not both')
+            }
 
             if (beneficiary.name || beneficiary.logo || beneficiary.description || beneficiary.biography) {
                 updateBeneficiary = await prisma.beneficiary.update({
@@ -268,89 +352,6 @@ export class BeneficiariesService {
                         logo: beneficiary.logo,
                         description: beneficiary.description,
                         biography: beneficiary.biography,
-                    },
-                });
-            }
-
-            if (beneficiary.provinceId && beneficiary.countyId && (beneficiary.neighborhoodId || beneficiary.neighborhoodName) && beneficiary.street) {
-
-                if (beneficiary.neighborhoodId && beneficiary.neighborhoodName) {
-                    throw new BadRequestException('Provide neighborhoodId or neighborhoodName, not both')
-                }
-
-                await prisma.address.update({
-                    where: {
-                        id: updateBeneficiary.addressId,
-                    },
-                    data: {
-                        province: {
-                            connect: {
-                                id: beneficiary.provinceId,
-                            },
-                        },
-                        county: {
-                            connect: {
-                                id: beneficiary.countyId,
-                            },
-                        },
-                        street: beneficiary.street,
-                    },
-                });
-
-                if (beneficiary.neighborhoodId) {
-                    await prisma.address.update({
-                        where: {
-                            id: updateBeneficiary.addressId,
-                        },
-                        data: {
-                            neighborhood: {
-                                connect: {
-                                    id: beneficiary.neighborhoodId,
-                                },
-                            },
-                        },
-                    });
-                } else if (beneficiary.neighborhoodName) {
-                    await prisma.address.update({
-                        where: {
-                            id: updateBeneficiary.addressId,
-                        },
-                        data: {
-                            neighborhood: {
-                                create: {
-                                    name: beneficiary.neighborhoodName,
-                                    county: {
-                                        connect: {
-                                            id: beneficiary.countyId,
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                    });
-                }
-
-            } else {
-                const mandatoryFields = ['provinceId', 'countyId', 'street'];
-
-                const missingFields = mandatoryFields.filter((field) => !beneficiary[field]);
-
-                if (!beneficiary.neighborhoodId && !beneficiary.neighborhoodName) {
-                    throw new BadRequestException('Provide neighborhoodId or neighborhoodName')
-                }
-
-                if (missingFields.length > 0) {
-                    throw new BadRequestException(`Missing fields: ${missingFields.join(', ')}`);
-                }
-            }
-
-            if (beneficiary.referencePoint) {
-                await prisma.address.update({
-                    where: {
-                        id: updateBeneficiary.addressId,
-                    },
-                    data: {
-                        referencePoint: beneficiary.referencePoint,
                     },
                 });
             }
@@ -400,13 +401,132 @@ export class BeneficiariesService {
                 });
             }
 
+            if (beneficiary.provinceId) {
+                await prisma.beneficiary.update({
+                    where: {
+                        id,
+                    },
+                    data: {
+                        address: {
+                            update: {
+                                province: {
+                                    connect: {
+                                        id: beneficiary.provinceId,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                })
+            }
+
+            if (beneficiary.countyId) {
+                await prisma.beneficiary.update({
+                    where: {
+                        id,
+                    },
+                    data: {
+                        address: {
+                            update: {
+                                county: {
+                                    connect: {
+                                        id: beneficiary.countyId,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                });
+            }
+
+            if (beneficiary.neighborhoodId) {
+                await prisma.beneficiary.update({
+                    where: {
+                        id,
+                    },
+                    data: {
+                        address: {
+                            update: {
+                                neighborhood: {
+                                    connect: {
+                                        id: beneficiary.neighborhoodId,
+                                    },
+                                },
+                            },
+                        },
+                    }
+                });
+            } else if (beneficiary.neighborhoodName) {
+
+                if (!beneficiary.countyId) {
+                    throw new BadRequestException('Provide countyId');
+                }
+
+                await prisma.beneficiary.update({
+                    where: {
+                        id,
+                    },
+                    data: {
+                        address: {
+                            update: {
+                                neighborhood: {
+                                    create: {
+                                        name: beneficiary.neighborhoodName,
+                                        county: {
+                                            connect: {
+                                                id: beneficiary.countyId,
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    }
+                });
+            }
+
+            if (beneficiary.street) {
+                await prisma.beneficiary.update({
+                    where: {
+                        id,
+                    },
+                    data: {
+                        address: {
+                            update: {
+                                street: beneficiary.street,
+                            },
+                        },
+                    },
+                });
+            }
+
+            if (beneficiary.referencePoint) {
+                await prisma.beneficiary.update({
+                    where: {
+                        id,
+                    },
+                    data: {
+                        address: {
+                            update: {
+                                referencePoint: beneficiary.referencePoint,
+                            },
+                        },
+                    },
+                });
+            }
+
             return beneficiary;
         });
     };
 
-    async deleteBeneficiary(where: Prisma.BeneficiaryWhereUniqueInput): Promise<Beneficiary> {
-        return this.prisma.beneficiary.delete({
-            where,
+    async softDeleteBeneficiary(id: string): Promise<Beneficiary> {
+        return await this.prisma.beneficiary.update({
+            where: {
+                id,
+            },
+            data: {
+                active: false,
+            },
         });
     }
 }
