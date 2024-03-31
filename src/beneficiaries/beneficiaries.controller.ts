@@ -1,23 +1,26 @@
-import { Body, Controller, Get, Param, Patch, Post, Put, Query, Res } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Res } from '@nestjs/common';
 import { FastifyReply } from 'fastify';
 import { BeneficiariesService } from './beneficiaries.service';
 import { CreateBeneficiaryDto } from './dto/create/create-beneficiary.dto';
 import { RequestUpdateBeneficiaryDto } from './dto/update/request-update-beneficiary.dto';
-import { Beneficiary as BeneficiaryModel } from '@prisma/client';
 import { ResponseReadBeneficiaryDto } from './dto/read/response-read-beneficiary.dto ';
 import { ResponseUpdateBeneficiaryDto } from './dto/update/response-update-beneficiary.dto';
+import { ResponseCreateBeneficiaryDto } from './dto/create/response-create-beneficiary-dto';
 
 @Controller('beneficiaries')
 export class BeneficiariesController {
     constructor(private beneficiaresService: BeneficiariesService) { }
 
     @Post()
-    async createBeneficiary(@Body() data: CreateBeneficiaryDto, @Res() response: FastifyReply): Promise<BeneficiaryModel> {
+    async createBeneficiary(
+        @Body() data: CreateBeneficiaryDto,
+        @Res() response: FastifyReply
+    ): Promise<ResponseCreateBeneficiaryDto> {
         try {
-            const beneficiary: BeneficiaryModel = await this.beneficiaresService.createBeneficiary(data);
+            const beneficiary: ResponseCreateBeneficiaryDto = await this.beneficiaresService.createBeneficiary(data);
             response.status(201)
-                    .header('Content-Type', 'application/json')
-                    .header('Location', `/beneficiaries/${beneficiary.id}`).send(beneficiary);
+                .header('Content-Type', 'application/json')
+                .header('Location', `/beneficiaries/${beneficiary.id}`).send(beneficiary);
             return beneficiary;
         } catch (error) {
             response.status(400).send({ message: error.message });
