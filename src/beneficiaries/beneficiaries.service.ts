@@ -6,6 +6,7 @@ import { RequestUpdateBeneficiaryDto } from './dto/update/request-update-benefic
 import { RequestReadBeneficiaryDto } from './dto/read/request-read-beneficiary.dto ';
 import { ResponseUpdateBeneficiaryDto } from './dto/update/response-update-beneficiary.dto';
 import { ResponseReadBeneficiaryDto } from './dto/read/response-read-beneficiary.dto ';
+import { ResponseCreateBeneficiaryDto } from './dto/create/response-create-beneficiary-dto';
 
 @Injectable()
 export class BeneficiariesService {
@@ -13,7 +14,7 @@ export class BeneficiariesService {
 
     // TO-DO: set DTO properties for request and response
 
-    async createBeneficiary(beneficiary: CreateBeneficiaryDto): Promise<Beneficiary> {
+    async createBeneficiary(beneficiary: CreateBeneficiaryDto): Promise<ResponseCreateBeneficiaryDto> {
 
         if (!beneficiary.neighborhoodId && !beneficiary.neighborhoodName) {
             throw new BadRequestException('Missing fields: neighborhoodId or neighborhoodName');
@@ -95,9 +96,15 @@ export class BeneficiariesService {
                         },
                     },
                 });
-            }
+            } 
 
-            return createBeneficiary;
+            return {
+                id: createBeneficiary.id,
+                name: createBeneficiary.name,
+                active: createBeneficiary.active,
+                createdAt: createBeneficiary.createdAt,
+                updatedAt: createBeneficiary.updatedAt,
+            };
         });
     }
 
