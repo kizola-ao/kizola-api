@@ -3,16 +3,15 @@ import { Beneficiary, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/database/prisma.service';
 import { CreateBeneficiaryDto } from './dto/create/create-beneficiary.dto';
 import { RequestUpdateBeneficiaryDto } from './dto/update/request-update-beneficiary.dto';
-import { RequestReadBeneficiaryDto } from './dto/read/request-read-beneficiary.dto ';
+import { RequestReadBeneficiaryDto } from './dto/read/request-read-beneficiary.dto';
 import { ResponseUpdateBeneficiaryDto } from './dto/update/response-update-beneficiary.dto';
-import { ResponseReadBeneficiaryDto } from './dto/read/response-read-beneficiary.dto ';
+import { ResponseReadBeneficiariesDto } from './dto/read/response-read-beneficiaries.dto';
 import { ResponseCreateBeneficiaryDto } from './dto/create/response-create-beneficiary-dto';
+import { ResponseReadBeneficiaryDto } from './dto/read/response-read-beneficiary.dto';
 
 @Injectable()
 export class BeneficiariesService {
     constructor(private prisma: PrismaService) { }
-
-    // TO-DO: set DTO properties for request and response
 
     async createBeneficiary(beneficiary: CreateBeneficiaryDto): Promise<ResponseCreateBeneficiaryDto> {
 
@@ -35,7 +34,7 @@ export class BeneficiariesService {
                         create: beneficiary.socialCausesId.map((socialCauseId) => ({
                             socialCauseId,
                         })),
-                    }, 
+                    },
                     BeneficiaryPhones: {
                         create: beneficiary.phoneNumbers.map((phoneNumber) => ({
                             number: phoneNumber,
@@ -96,7 +95,7 @@ export class BeneficiariesService {
                         },
                     },
                 });
-            } 
+            }
 
             return {
                 id: createBeneficiary.id,
@@ -109,18 +108,29 @@ export class BeneficiariesService {
     }
 
     async readBeneficiaries(params: {
-        skip?: number;
-        take?: number;
-        cursor?: Prisma.BeneficiaryWhereUniqueInput;
+        page?: number;
+        limit?: number;
         where?: Prisma.BeneficiaryWhereInput;
         orderBy?: Prisma.BeneficiaryOrderByWithRelationInput;
-    }): Promise<ResponseReadBeneficiaryDto> {
-        const { skip, take, cursor, where, orderBy } = params;
+    }): Promise<ResponseReadBeneficiariesDto> {
+        const { page, limit, where, orderBy } = params;
+
+        if (page < 1 || limit < 1) {
+            throw new BadRequestException('Invalid page or limit');
+        }
+
+        if (orderBy && !['id', 'name', 'createdAt', 'updatedAt'].includes(Object.keys(orderBy)[0])) {
+            throw new BadRequestException('Invalid value to orderBy');
+        }
+
+        const skip = (page - 1) * limit;
+        const take = limit;
+        const total = await this.prisma.beneficiary.count({ where });
+        const lastPage = Math.ceil(total / limit);
 
         const beneficiaries = this.prisma.beneficiary.findMany({
             skip,
             take,
-            cursor,
             where,
             orderBy,
             select: {
@@ -189,46 +199,56 @@ export class BeneficiariesService {
             }
         });
 
-        // TO-DO: create a method to return the response because the code is repeated in readBeneficiary method
-        return (await beneficiaries).map((beneficiary) => ({
-            id: beneficiary.id,
-            name: beneficiary.name,
-            logo: beneficiary.logo,
-            description: beneficiary.description,
-            biography: beneficiary.biography,
-            numberDonations: beneficiary.numberDonations,
-            totalAmountReceived: beneficiary.totalAmountReceived,
-            active: beneficiary.active,
-            createdAt: beneficiary.createdAt,
-            updatedAt: beneficiary.updatedAt,
-            socialCauses: beneficiary.BeneficiarySocialCauses.map((beneficiarySocialCause) => beneficiarySocialCause.socialCause.name),
-            phones: beneficiary.BeneficiaryPhones.map((beneficiaryPhone) => ({
-                id: beneficiaryPhone.id,
-                number: beneficiaryPhone.number,
-                active: beneficiaryPhone.active,
-                createdAt: beneficiaryPhone.createdAt,
-                updatedAt: beneficiaryPhone.updatedAt,
+        return {
+            beneficiaries: (await beneficiaries).map((beneficiary) => ({
+                id: beneficiary.id,
+                name: beneficiary.name,
+                logo: beneficiary.logo,
+                description: beneficiary.description,
+                biography: beneficiary.biography,
+                numberDonations: beneficiary.numberDonations,
+                totalAmountReceived: Number(beneficiary.totalAmountReceived), //Convert Decimal to number
+                active: beneficiary.active,
+                createdAt: beneficiary.createdAt,
+                updatedAt: beneficiary.updatedAt,
+                socialCauses: beneficiary.BeneficiarySocialCauses
+                    .map((beneficiarySocialCause) => beneficiarySocialCause.socialCause.name),
+                phones: beneficiary.BeneficiaryPhones.map((beneficiaryPhone) => ({
+                    id: beneficiaryPhone.id,
+                    number: beneficiaryPhone.number,
+                    active: beneficiaryPhone.active,
+                    createdAt: beneficiaryPhone.createdAt,
+                    updatedAt: beneficiaryPhone.updatedAt,
+                })),
+                emails: beneficiary.BeneficiaryEmails.map((beneficiaryEmail) => ({
+                    id: beneficiaryEmail.id,
+                    email: beneficiaryEmail.email,
+                    active: beneficiaryEmail.active,
+                    createdAt: beneficiaryEmail.createdAt,
+                    updatedAt: beneficiaryEmail.updatedAt,
+                })),
+                address: {
+                    id: beneficiary.address.id,
+                    province: beneficiary.address.province.name,
+                    county: beneficiary.address.county.name,
+                    neighborhood: beneficiary.address.neighborhood.name,
+                    street: beneficiary.address.street,
+                    referencePoint: beneficiary.address.referencePoint,
+                },
             })),
-            emails: beneficiary.BeneficiaryEmails.map((beneficiaryEmail) => ({
-                id: beneficiaryEmail.id,
-                email: beneficiaryEmail.email,
-                active: beneficiaryEmail.active,
-                createdAt: beneficiaryEmail.createdAt,
-                updatedAt: beneficiaryEmail.updatedAt,
-            })),
-            address: {
-                id: beneficiary.address.id,
-                province: beneficiary.address.province.name,
-                county: beneficiary.address.county.name,
-                neighborhood: beneficiary.address.neighborhood.name,
-                street: beneficiary.address.street,
-                referencePoint: beneficiary.address.referencePoint,
+            meta: {
+                total,
+                currentPage: page,
+                lastPage,
+                limit,
+                prev: page > 1 ? `/beneficiaries?page=${page - 1}&limit=${limit}` : null,
+                next: page < lastPage ? `/beneficiaries?page=${page + 1}&limit=${limit}` : null,
             },
-        }));
+        };
     }
 
-    async readBeneficiary(beneficiary: RequestReadBeneficiaryDto): Promise<ResponseReadBeneficiaryDto | null> {
-        const beneficiaryFounded = this.prisma.beneficiary.findUnique({
+    async readBeneficiary(beneficiary: RequestReadBeneficiaryDto): Promise< ResponseReadBeneficiaryDto | string | null > {
+        const beneficiaryFounded = await this.prisma.beneficiary.findUnique({
             where: {
                 id: beneficiary.id,
             },
@@ -298,30 +318,31 @@ export class BeneficiariesService {
             }
         });
 
-        if (await beneficiaryFounded == null) {
+        if (beneficiaryFounded === null) {
             return `Beneficiary with id ${beneficiary.id} not found`;
         }
 
-        return await beneficiaryFounded.then((beneficiary) => ({
-            id: beneficiary.id,
-            name: beneficiary.name,
-            logo: beneficiary.logo,
-            description: beneficiary.description,
-            biography: beneficiary.biography,
-            numberDonations: beneficiary.numberDonations,
-            totalAmountReceived: beneficiary.totalAmountReceived,
-            active: beneficiary.active,
-            createdAt: beneficiary.createdAt,
-            updatedAt: beneficiary.updatedAt,
-            socialCauses: beneficiary.BeneficiarySocialCauses.map((beneficiarySocialCause) => beneficiarySocialCause.socialCause.name),
-            phones: beneficiary.BeneficiaryPhones.map((beneficiaryPhone) => ({
+        return {
+            id: beneficiaryFounded.id,
+            name: beneficiaryFounded.name,
+            logo: beneficiaryFounded.logo,
+            description: beneficiaryFounded.description,
+            biography: beneficiaryFounded.biography,
+            numberDonations: beneficiaryFounded.numberDonations,
+            totalAmountReceived: Number(beneficiaryFounded.totalAmountReceived), //Convert Decimal to number
+            active: beneficiaryFounded.active,
+            createdAt: beneficiaryFounded.createdAt,
+            updatedAt: beneficiaryFounded.updatedAt,
+            socialCauses: beneficiaryFounded.BeneficiarySocialCauses
+                .map((beneficiarySocialCause) => beneficiarySocialCause.socialCause.name),
+            phones: beneficiaryFounded.BeneficiaryPhones.map((beneficiaryPhone) => ({
                 id: beneficiaryPhone.id,
                 number: beneficiaryPhone.number,
                 active: beneficiaryPhone.active,
                 createdAt: beneficiaryPhone.createdAt,
                 updatedAt: beneficiaryPhone.updatedAt,
             })),
-            emails: beneficiary.BeneficiaryEmails.map((beneficiaryEmail) => ({
+            emails: beneficiaryFounded.BeneficiaryEmails.map((beneficiaryEmail) => ({
                 id: beneficiaryEmail.id,
                 email: beneficiaryEmail.email,
                 active: beneficiaryEmail.active,
@@ -329,17 +350,16 @@ export class BeneficiariesService {
                 updatedAt: beneficiaryEmail.updatedAt,
             })),
             address: {
-                id: beneficiary.address.id,
-                province: beneficiary.address.province.name,
-                county: beneficiary.address.county.name,
-                neighborhood: beneficiary.address.neighborhood.name,
-                street: beneficiary.address.street,
-                referencePoint: beneficiary.address.referencePoint,
+                id: beneficiaryFounded.address.id,
+                province: beneficiaryFounded.address.province.name,
+                county: beneficiaryFounded.address.county.name,
+                neighborhood: beneficiaryFounded.address.neighborhood.name,
+                street: beneficiaryFounded.address.street,
+                referencePoint: beneficiaryFounded.address.referencePoint,
             },
-        }));
+        };
     }
 
-    // TO-DO: method create and update not necessarily return the body, just the status code! Search in phind more about that
     async updateBeneficiary(id: string, beneficiary: RequestUpdateBeneficiaryDto): Promise<ResponseUpdateBeneficiaryDto> {
         return await this.prisma.$transaction(async (prisma) => {
 
