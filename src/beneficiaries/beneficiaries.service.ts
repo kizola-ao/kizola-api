@@ -207,6 +207,16 @@ export class BeneficiariesService {
                         },
                     },
                 },
+                linkSocialNetwork: {
+                    select: {
+                        link: true,
+                        socialNetwork: {
+                            select: {
+                                name: true,
+                            },
+                        },
+                    },
+                }
             }
         });
 
@@ -246,6 +256,10 @@ export class BeneficiariesService {
                     street: beneficiary.address.street,
                     referencePoint: beneficiary.address.referencePoint,
                 },
+                socialNetworks: beneficiary.linkSocialNetwork.map((socialNetwork) => ({
+                    socialNetwork: socialNetwork.socialNetwork.name,
+                    link: socialNetwork.link,
+                })),
             })),
             meta: {
                 total,
@@ -326,6 +340,17 @@ export class BeneficiariesService {
                         },
                     },
                 },
+                linkSocialNetwork: {
+                    select: {
+                        link: true,
+                        socialNetwork: {
+                            select: {
+                                name: true,
+                            },
+                        },
+                    },
+                
+                }
             }
         });
 
@@ -368,6 +393,10 @@ export class BeneficiariesService {
                 street: beneficiaryFounded.address.street,
                 referencePoint: beneficiaryFounded.address.referencePoint,
             },
+            socialNetworks: beneficiaryFounded.linkSocialNetwork.map((socialNetwork) => ({
+                socialNetwork: socialNetwork.socialNetwork.name,
+                link: socialNetwork.link,
+            })),
         };
     }
 

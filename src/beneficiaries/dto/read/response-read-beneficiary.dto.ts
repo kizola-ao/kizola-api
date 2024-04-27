@@ -31,5 +31,9 @@ export class ResponseReadBeneficiaryDto {
         neighborhood: string;
         street: string;
         referencePoint: string;
-    }
+    };
+    socialNetworks: {
+        socialNetwork: string;
+        link: string;
+    }[];
 };

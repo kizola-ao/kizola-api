@@ -32,7 +32,11 @@ export class ResponseReadBeneficiariesDto {
             neighborhood: string;
             street: string;
             referencePoint: string;
-        }
+        },
+        socialNetworks: {
+            socialNetwork: string;
+            link: string;
+        }[]
     }[];
     meta: {
         total: number;
