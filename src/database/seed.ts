@@ -30,6 +30,17 @@ async function main() {
             { name: "Desemprego" },
         ]
     });
+
+    await prisma.socialNetwork.createMany({
+        data: [
+            { name: "Facebook" },
+            { name: "Instagram" },
+            { name: "Twitter" },
+            { name: "LinkedIn" },
+            { name: "YouTube" },
+            { name: "TikTok" },
+        ]
+    });
 }
 main()
     .then(async () => {

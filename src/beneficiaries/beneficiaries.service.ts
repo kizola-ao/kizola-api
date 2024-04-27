@@ -13,7 +13,8 @@ import { ResponseReadBeneficiaryDto } from './dto/read/response-read-beneficiary
 export class BeneficiariesService {
     constructor(private prisma: PrismaService) { }
 
-    async createBeneficiary(beneficiary: CreateBeneficiaryDto): Promise<ResponseCreateBeneficiaryDto> {
+    async createBeneficiary(beneficiary: 
+        CreateBeneficiaryDto): Promise<ResponseCreateBeneficiaryDto> {
 
         if (!beneficiary.neighborhoodId && !beneficiary.neighborhoodName) {
             throw new BadRequestException('Missing fields: neighborhoodId or neighborhoodName');
@@ -60,6 +61,16 @@ export class BeneficiariesService {
                             },
                             referencePoint: beneficiary.referencePoint,
                         },
+                    },
+                    linkSocialNetwork: {
+                        create: beneficiary.socialNetworks.map((socialNetwork) => ({
+                            link: socialNetwork.link,
+                            socialNetwork: {
+                                connect: {
+                                    id: socialNetwork.socialNetworkId,
+                                },
+                            },
+                        })),
                     },
                 },
             });

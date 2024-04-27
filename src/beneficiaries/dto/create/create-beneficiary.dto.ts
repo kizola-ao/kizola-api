@@ -1,4 +1,4 @@
-import { ArrayNotEmpty, ArrayUnique, IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID } from "class-validator"
+import { ArrayNotEmpty, ArrayUnique, IsArray, IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID } from "class-validator"
 
 export class CreateBeneficiaryDto {
     @IsNotEmpty()
@@ -58,4 +58,13 @@ export class CreateBeneficiaryDto {
     @IsString()
     @IsNotEmpty()
     referencePoint: string | null
+
+    @IsOptional()
+    @IsArray()
+    @ArrayNotEmpty()
+    @ArrayUnique()
+    socialNetworks: {
+        link: string,
+        socialNetworkId: string
+    }[]
 };
