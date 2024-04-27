@@ -582,6 +582,40 @@ export class BeneficiariesService {
                 });
             }
 
+            if (beneficiary.socialNetworks) {
+                for (const socialNetwork of beneficiary.socialNetworks) {
+
+                    if (!socialNetwork.link && !socialNetwork.socialNetworkId) {
+                        throw new BadRequestException('Missing fields: link or socialNetworkId');
+                    }
+
+                    if (socialNetwork.id) {
+                        await prisma.linkSocialNetwork.update({
+                            where: {
+                                id: socialNetwork.id,
+                                beneficiaryId: id, 
+                            },
+                            data: {
+                                link: socialNetwork.link,
+                                socialNetworkId: socialNetwork.socialNetworkId,
+                            },
+                        });
+                    } else if (!socialNetwork.id) {
+                        if (!socialNetwork.link || !socialNetwork.socialNetworkId) {
+                            throw new BadRequestException('Missing fields: link or socialNetworkId');
+                        }
+
+                        await prisma.linkSocialNetwork.create({
+                            data: {
+                                link: socialNetwork.link,
+                                socialNetworkId: socialNetwork.socialNetworkId,
+                                beneficiaryId: id,
+                            },
+                        });
+                    }
+                }
+            }
+
             return beneficiary;
         });
     };
